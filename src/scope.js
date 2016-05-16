@@ -14,8 +14,12 @@ Scope.prototype.$watch = function(watchFn, listenerFn) {
 
 Scope.prototype.$digest = function() {
     _.forEach(this.$$watchers, function(watcher) {
-        watcher.listenerFn();
-    });
+        var newValue = watcher.watchFn(this);
+        if (watcher.lastVal !== newValue) {
+            watcher.listenerFn(newValue, watcher.lastVal, this);
+            watcher.lastVal = newValue;
+        }
+    }.bind(this));
 };
 
 module.exports = Scope;
