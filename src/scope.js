@@ -15,22 +15,32 @@ Scope.prototype.$watch = function(watchFn, listenerFn, deepWatch) {
     };
     this.$$watchers.push(watcher);
     this.$$lastDirtyWatch = null;
+    return function() {
+        var index = this.$$watchers.indexOf(watcher);
+        if (index >= 0) {
+            this.$$watchers.splice(index, 1);
+        }
+    }.bind(this);
 };
 
 Scope.prototype.$$digestOnce = function() {
     var dirty, newValue, lastValue;
     _.forEach(this.$$watchers, function(watcher) {
-        newValue = watcher.watchFn(this);
-        lastValue = watcher.lastVal;
-        if (!this.$$areEqual(newValue, lastValue, watcher.deepWatch)) {
-            this.$$lastDirtyWatch = watcher;
-            watcher.listenerFn(newValue, 
-                (watcher.lastVal === initWatchVal ? newValue : watcher.lastVal),
-                this);
-            watcher.lastVal = (watcher.deepWatch ? _.cloneDeep(newValue) : newValue);
-            dirty = true;
-        } else if (this.$$lastDirtyWatch === watcher) {
-            return false;
+        try {
+            newValue = watcher.watchFn(this);
+            lastValue = watcher.lastVal;
+            if (!this.$$areEqual(newValue, lastValue, watcher.deepWatch)) {
+                this.$$lastDirtyWatch = watcher;
+                watcher.listenerFn(newValue, 
+                    (watcher.lastVal === initWatchVal ? newValue : watcher.lastVal),
+                    this);
+                watcher.lastVal = (watcher.deepWatch ? _.cloneDeep(newValue) : newValue);
+                dirty = true;
+            } else if (this.$$lastDirtyWatch === watcher) {
+                return false;
+            }
+        } catch (e) {
+            console.error(e);
         }
     }.bind(this));
     return dirty;
